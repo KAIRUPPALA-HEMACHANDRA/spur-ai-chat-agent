@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+
 	import { sendMessage, getConversation } from '$lib/services/chat.service';
+
+	import MessageBubble from '$lib/components/MessageBubble.svelte';
+	import ChatInput from '$lib/components/ChatInput.svelte';
 
 	interface Message {
 		sender: 'USER' | 'AI';
@@ -12,6 +16,10 @@
 	let sessionId = $state<string | null>(null);
 	let messages = $state<Message[]>([]);
 	let chatContainer = $state<HTMLDivElement | null>(null);
+
+	let errorMessage = $state('');
+
+	const MAX_MESSAGE_LENGTH = 1000;
 
 	onMount(async () => {
 		const savedSessionId = localStorage.getItem('sessionId');
@@ -38,10 +46,18 @@
 
 	async function handleSend() {
 		if (!message.trim()) {
+			errorMessage = 'Please enter a message.';
+			return;
+		}
+
+		if (message.length > MAX_MESSAGE_LENGTH) {
+			errorMessage = `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters allowed.`;
 			return;
 		}
 
 		const userMessage = message;
+
+		errorMessage = '';
 
 		messages.push({
 			sender: 'USER',
@@ -77,7 +93,8 @@
 		} catch (error) {
 			messages.push({
 				sender: 'AI',
-				content: 'Sorry, something went wrong.'
+				content:
+					'⚠️ Unable to contact the support agent. Please try again.'
 			});
 
 			scrollToBottom();
@@ -106,23 +123,10 @@
 		class="border rounded-lg p-4 h-[500px] overflow-y-auto mb-4 space-y-3"
 	>
 		{#each messages as msg}
-			<div
-				class={`flex ${
-					msg.sender === 'USER'
-						? 'justify-end'
-						: 'justify-start'
-				}`}
-			>
-				<div
-					class={`max-w-[80%] px-4 py-2 rounded-lg ${
-						msg.sender === 'USER'
-							? 'bg-blue-500 text-white'
-							: 'bg-gray-200 text-black'
-					}`}
-				>
-					{msg.content}
-				</div>
-			</div>
+			<MessageBubble
+				sender={msg.sender}
+				content={msg.content}
+			/>
 		{/each}
 
 		{#if loading}
@@ -132,24 +136,17 @@
 		{/if}
 	</div>
 
-	<div class="flex gap-2">
-		<input
-			bind:value={message}
-			class="border rounded-lg p-2 flex-1"
-			placeholder="Ask a question..."
-			onkeydown={(event) => {
-				if (event.key === 'Enter' && !loading) {
-					handleSend();
-				}
-			}}
-		/>
-
-		<button
-			onclick={handleSend}
-			disabled={loading}
-			class="border rounded-lg px-4 py-2 disabled:opacity-50"
+	{#if errorMessage}
+		<div
+			class="mb-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700"
 		>
-			Send
-		</button>
-	</div>
+			{errorMessage}
+		</div>
+	{/if}
+
+	<ChatInput
+		bind:message
+		{loading}
+		onSend={handleSend}
+	/>
 </div>
