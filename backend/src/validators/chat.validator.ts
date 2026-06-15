@@ -9,6 +9,7 @@ export const sendMessageSchema = z.object({
 
   sessionId: z
     .string()
+    .uuid("Invalid session id")
     .optional(),
 });
 

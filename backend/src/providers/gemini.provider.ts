@@ -1,11 +1,11 @@
 import { GoogleGenAI } from "@google/genai";
 import { LLMProvider } from "./llm.provider.js";
 import { STORE_KNOWLEDGE } from "../constants/store-knowledge.js";
-import { ChatMessage } from "../types/chat.types.js";
-
+// import { ChatMessage } from "../types/chat.types.js";
+import { env } from "../config/env.js";
 
 const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY!,
+  apiKey: env.geminiApiKey,
 });
 
 export class GeminiProvider implements LLMProvider {
@@ -39,11 +39,21 @@ Instructions:
 - If you don't know the answer, say so honestly.
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
+    try {
+      const response =
+        await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+        });
 
-    return response.text ?? "Sorry, I couldn't generate a response.";
+      return (
+        response.text ??
+        "Sorry, I couldn't generate a response."
+      );
+    } catch (error) {
+      console.error(error);
+
+      return "Sorry, our support agent is currently unavailable. Please try again later.";
+    }
   }
 }

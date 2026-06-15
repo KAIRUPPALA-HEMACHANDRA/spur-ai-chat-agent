@@ -2,6 +2,8 @@ import { FastifyReply, FastifyRequest } from "fastify";
 
 import { ChatService } from "../services/chat.service.js";
 import { sendMessageSchema } from "../validators/chat.validator.js";
+import { ZodError } from "zod";
+import { AppError } from "../errors/app.error.js";
 
 export class ChatController {
   private chatService = new ChatService();
@@ -16,14 +18,27 @@ export class ChatController {
       );
 
       return reply.send(result);
-    } catch (error) {
+    }
+    catch (error) {
       request.log.error(error);
 
-      const message =
-        error instanceof Error ? error.message : "Something went wrong";
+      if (error instanceof ZodError) {
+        return reply.status(400).send({
+          error: error.issues[0]?.message,
+        });
+      }
 
-      return reply.status(400).send({
-        error: message,
+      if (error instanceof AppError) {
+        return reply.status(
+          error.statusCode
+        ).send({
+          error: error.message,
+        });
+      }
+
+      return reply.status(500).send({
+        error:
+          "Internal server error",
       });
     }
   }
