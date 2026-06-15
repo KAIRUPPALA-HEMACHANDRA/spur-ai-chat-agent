@@ -1,58 +1,155 @@
 <script lang="ts">
-  import { sendMessage }
-    from "$lib/services/chat.service";
+	import { onMount } from 'svelte';
+	import { sendMessage, getConversation } from '$lib/services/chat.service';
 
-let message = $state("");
-let response = $state("");
-let loading = $state(false);
+	interface Message {
+		sender: 'USER' | 'AI';
+		content: string;
+	}
 
-  async function handleSend() {
-    if (!message.trim()) return;
+	let message = $state('');
+	let loading = $state(false);
+	let sessionId = $state<string | null>(null);
+	let messages = $state<Message[]>([]);
+	let chatContainer = $state<HTMLDivElement | null>(null);
 
-    loading = true;
+	onMount(async () => {
+		const savedSessionId = localStorage.getItem('sessionId');
 
-    try {
-      const result =
-        await sendMessage(message);
+		if (!savedSessionId) {
+			return;
+		}
 
-      response = result.reply;
-    } catch (error) {
-      response =
-        "Something went wrong";
-    }
+		try {
+			const conversation = await getConversation(savedSessionId);
 
-    loading = false;
-  }
+			sessionId = savedSessionId;
+
+			messages = conversation.messages.map((msg: Message) => ({
+				sender: msg.sender,
+				content: msg.content
+			}));
+
+			scrollToBottom();
+		} catch (error) {
+			console.error(error);
+		}
+	});
+
+	async function handleSend() {
+		if (!message.trim()) {
+			return;
+		}
+
+		const userMessage = message;
+
+		messages.push({
+			sender: 'USER',
+			content: userMessage
+		});
+
+		scrollToBottom();
+
+		message = '';
+		loading = true;
+
+		try {
+			const result = await sendMessage(
+				userMessage,
+				sessionId ?? undefined
+			);
+
+			if (!sessionId) {
+				sessionId = result.sessionId;
+
+				localStorage.setItem(
+					'sessionId',
+					result.sessionId
+				);
+			}
+
+			messages.push({
+				sender: 'AI',
+				content: result.reply
+			});
+
+			scrollToBottom();
+		} catch (error) {
+			messages.push({
+				sender: 'AI',
+				content: 'Sorry, something went wrong.'
+			});
+
+			scrollToBottom();
+		} finally {
+			loading = false;
+		}
+	}
+
+	function scrollToBottom() {
+		setTimeout(() => {
+			chatContainer?.scrollTo({
+				top: chatContainer.scrollHeight,
+				behavior: 'smooth'
+			});
+		}, 50);
+	}
 </script>
 
-<div class="p-8">
-  <h1 class="text-2xl font-bold mb-4">
-    Spur AI Chat
-  </h1>
+<div class="max-w-3xl mx-auto p-6">
+	<h1 class="text-3xl font-bold mb-6">
+		Spur AI Support
+	</h1>
 
-  <input
-    bind:value={message}
-    class="border p-2 w-full"
-    placeholder="Ask something..."
-  />
+	<div
+		bind:this={chatContainer}
+		class="border rounded-lg p-4 h-[500px] overflow-y-auto mb-4 space-y-3"
+	>
+		{#each messages as msg}
+			<div
+				class={`flex ${
+					msg.sender === 'USER'
+						? 'justify-end'
+						: 'justify-start'
+				}`}
+			>
+				<div
+					class={`max-w-[80%] px-4 py-2 rounded-lg ${
+						msg.sender === 'USER'
+							? 'bg-blue-500 text-white'
+							: 'bg-gray-200 text-black'
+					}`}
+				>
+					{msg.content}
+				</div>
+			</div>
+		{/each}
 
-  <button
-    class="border px-4 py-2 mt-4"
-    onclick={handleSend}
-  >
-    Send
-  </button>
+		{#if loading}
+			<div class="text-sm text-gray-500">
+				Agent is typing...
+			</div>
+		{/if}
+	</div>
 
-  {#if loading}
-    <p class="mt-4">
-      Thinking...
-    </p>
-  {/if}
+	<div class="flex gap-2">
+		<input
+			bind:value={message}
+			class="border rounded-lg p-2 flex-1"
+			placeholder="Ask a question..."
+			onkeydown={(event) => {
+				if (event.key === 'Enter' && !loading) {
+					handleSend();
+				}
+			}}
+		/>
 
-  {#if response}
-    <div class="mt-4">
-      <strong>AI:</strong>
-      {response}
-    </div>
-  {/if}
+		<button
+			onclick={handleSend}
+			disabled={loading}
+			class="border rounded-lg px-4 py-2 disabled:opacity-50"
+		>
+			Send
+		</button>
+	</div>
 </div>
