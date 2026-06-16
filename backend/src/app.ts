@@ -12,6 +12,13 @@ export const buildApp = async () => {
     origin: true,
   });
 
+  app.get("/", async () => {
+    return {
+      status: "ok",
+      service: "Spur AI Chat Agent",
+    };
+  });
+
   app.get("/health", async () => {
     return {
       status: "ok",
