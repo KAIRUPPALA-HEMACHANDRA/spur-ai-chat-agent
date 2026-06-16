@@ -1,73 +1,93 @@
-# Spur AI Chat Agent
+# 🤖 Spur AI Chat Agent
 
-An AI-powered customer support chatbot built as part of the Spur Software Engineer take-home assignment.
-
-The application allows users to interact with a support agent backed by Google's Gemini model, while maintaining conversation history and persisting messages in a database.
+An AI-powered customer support chatbot that provides context-aware responses, persists full conversation history, and restores sessions across page refreshes — built with **Fastify**, **TypeScript**, **PostgreSQL**, **Google Gemini**, and **SvelteKit**.
 
 ---
 
-## Features
+## 🌐 Live Demo
 
-### AI Customer Support Agent
+| Service | URL |
+|---|---|
+| Frontend | https://spur-ai-chat-agent-chi.vercel.app |
+| Backend API | https://spur-ai-chat-agent-p9si.onrender.com |
+| Health Check | https://spur-ai-chat-agent-p9si.onrender.com/health |
 
-* Powered by Google Gemini
-* Context-aware responses using conversation history
-* FAQ/domain knowledge support
-
-### Conversation Management
-
-* Session-based conversations
-* Persistent message history
-* Conversation restoration after page refresh
-
-### User Experience
-
-* Real-time chat interface
-* Auto-scroll to latest message
-* Enter key support
-* Loading indicator
-* Disabled send button during requests
-* User and AI message bubbles
-
-### Reliability
-
-* Input validation
-* Session validation
-* Graceful AI failure handling
-* Friendly error messages
-* No hardcoded secrets
+> The backend is deployed on Render's free tier and may take a few seconds to wake up after periods of inactivity.
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-### Frontend
+### 🧠 AI Customer Support Agent
+- Powered by Google Gemini
+- Context-aware responses using conversation history
+- Built-in FAQ knowledge (shipping, returns, refunds, support hours)
 
-* SvelteKit
-* TypeScript
+### 💬 Conversation Management
+- Session-based conversations with UUID tracking
+- Persistent message history via PostgreSQL
+- Automatic session restoration after page refresh
+
+### 🖥️ User Experience
+- Real-time chat interface with user/AI message bubbles
+- Auto-scroll to latest message
+- Enter key support and loading indicator
+- Send button disabled during in-flight requests
+
+### 🔒 Reliability & Security
+- Input validation (empty messages, maximum length)
+- Graceful AI failure handling with friendly error messages
+- Secrets stored in environment variables — never committed to source control
+
+---
+
+## 🏗️ Architecture
+
+```
+SvelteKit Frontend  (Vercel)
+        │
+        ▼
+    Fastify API      (Render)
+        │
+        ▼
+    Chat Service
+        │
+ ┌──────┴──────┐
+ ▼             ▼
+Gemini AI   PostgreSQL  (Neon)
+ Provider    Database
+```
+
+The backend follows a **layered architecture**:
+
+| Layer | Responsibility |
+|---|---|
+| Controllers | Handle HTTP requests and responses |
+| Services | Contain business logic |
+| Repositories | Handle database interactions via Prisma |
+| Providers | Integrate with external APIs (Gemini) |
+| Validators | Validate and sanitize incoming request payloads |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | SvelteKit, TypeScript |
+| Backend | Node.js, Fastify, TypeScript |
+| ORM | Prisma |
+| Database | PostgreSQL (Neon) |
+| AI | Google Gemini API |
+| Deployment | Vercel (frontend), Render (backend) |
+
+---
+
+## 📁 Project Structure
 
 ### Backend
 
-* Node.js
-* Fastify
-* TypeScript
-* Prisma ORM
-
-### Database
-
-* PostgreSQL
-
-### AI
-
-* Google Gemini API
-
----
-
-## Project Structure
-
-### Backend
-
-```text
+```
 backend/src
 ├── config/
 ├── constants/
@@ -79,182 +99,64 @@ backend/src
 ├── routes/
 ├── services/
 ├── types/
-├── validators/
+└── validators/
 ```
 
 ### Frontend
 
-```text
+```
 frontend/src
 ├── lib/
 │   ├── components/
 │   ├── services/
 │   └── types/
-├── routes/
+└── routes/
 ```
 
 ---
 
-## Architecture
-
-The backend follows a layered architecture:
-
-```text
-Route
- ↓
-Controller
- ↓
-Service
- ↓
-Repository
- ↓
-Database
-```
-
-### Responsibilities
-
-#### Controllers
-
-Handle HTTP requests and responses.
-
-#### Services
-
-Contain business logic.
-
-#### Repositories
-
-Handle database interactions.
-
-#### Providers
-
-Integrate with external services such as Gemini.
-
-#### Validators
-
-Validate incoming request payloads.
-
----
-
-## Database Schema
+## 🗄️ Database Schema
 
 ### Conversation
 
-| Field     | Type     |
-| --------- | -------- |
-| id        | UUID     |
+| Field | Type |
+|---|---|
+| id | UUID |
 | createdAt | DateTime |
 
 ### Message
 
-| Field          | Type      |
-| -------------- | --------- |
-| id             | UUID      |
-| conversationId | UUID      |
-| sender         | USER | AI |
-| content        | String    |
-| createdAt      | DateTime  |
+| Field | Type |
+|---|---|
+| id | UUID |
+| conversationId | UUID |
+| sender | `USER` \| `AI` |
+| content | String |
+| createdAt | DateTime |
 
 ---
 
-## Environment Variables
-
-### Backend
-
-Create:
-
-```env
-backend/.env
-```
-
-```env
-DATABASE_URL=your_database_url
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-### Frontend
-
-Create:
-
-```env
-frontend/.env
-```
-
-```env
-VITE_API_URL=http://localhost:3000
-```
-
----
-
-## Local Setup
-
-### Clone Repository
-
-```bash
-git clone <repository-url>
-cd spur-ai-chat-agent
-```
-
-### Backend Setup
-
-```bash
-cd backend
-
-npm install
-
-npx prisma generate
-
-npx prisma migrate dev
-
-npm run dev
-```
-
-Backend runs on:
-
-```text
-http://localhost:3000
-```
-
-### Frontend Setup
-
-```bash
-cd frontend
-
-npm install
-
-npm run dev
-```
-
-Frontend runs on:
-
-```text
-http://localhost:5173
-```
-
----
-
-## API Endpoints
+## 📡 API Reference
 
 ### Send Message
-
-#### Request
 
 ```http
 POST /chat/message
 ```
 
+Request:
 ```json
 {
   "message": "What is your return policy?",
-  "sessionId": "optional-session-id"
+  "sessionId": "optional-existing-session-id"
 }
 ```
 
-#### Response
-
+Response:
 ```json
 {
   "reply": "You can return items within 30 days of purchase.",
-  "sessionId": "conversation-id"
+  "sessionId": "conversation-uuid"
 }
 ```
 
@@ -262,90 +164,115 @@ POST /chat/message
 
 ### Get Conversation History
 
-#### Request
-
 ```http
 GET /chat/:sessionId
 ```
 
-#### Response
-
+Response:
 ```json
 {
-  "sessionId": "conversation-id",
-  "messages": []
+  "sessionId": "conversation-uuid",
+  "messages": [
+    { "sender": "USER", "content": "Hello", "createdAt": "..." },
+    { "sender": "AI", "content": "Hi! How can I help?", "createdAt": "..." }
+  ]
 }
 ```
 
 ---
 
-## Functional Requirements Covered
+### Health Check
 
-### Chat UI
+```http
+GET /health
+```
 
-* Scrollable chat history
-* User/AI distinction
-* Send button
-* Enter key support
-* Auto-scroll
-
-### Backend API
-
-* Message endpoint
-* Conversation history endpoint
-* Session management
-
-### LLM Integration
-
-* Gemini integration
-* Conversation context
-* Environment variable configuration
-* Graceful error handling
-
-### FAQ Knowledge
-
-* Shipping policy
-* Return policy
-* Refund policy
-* Support hours
-
-### Persistence
-
-* Conversations
-* Messages
-* Session restoration
-
-### Robustness
-
-* Empty message validation
-* Maximum length validation
-* Invalid session handling
-* AI failure handling
-* Clean error responses
+Response:
+```json
+{ "status": "ok" }
+```
 
 ---
 
-## Tradeoffs & Assumptions
+## ⚙️ Local Setup
 
-* Conversation history is capped before being sent to the LLM to control token usage.
-* FAQ knowledge is stored as prompt context rather than in a dedicated knowledge base.
-* Authentication is intentionally omitted to keep the scope focused on the assignment requirements.
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database (local or [Neon](https://neon.tech) free tier)
+- Google Gemini API key ([get one here](https://aistudio.google.com/app/apikey))
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/KAIRUPPALA-HEMACHANDRA/spur-ai-chat-agent.git
+cd spur-ai-chat-agent
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+npm install
+```
+
+Create `backend/.env`:
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+```bash
+npx prisma generate
+npx prisma migrate dev
+npm run dev
+```
+
+Backend runs at `http://localhost:3000`
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+npm install
+```
+
+Create `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+```bash
+npm run dev
+```
+
+Frontend runs at `http://localhost:5173`
 
 ---
 
-## Future Improvements
+## ⚖️ Tradeoffs & Assumptions
 
-* Streaming AI responses
-* Redis caching
-* Authentication and user accounts
-* Rate limiting
-* Markdown rendering
-* Docker support
-* CI/CD pipeline
-* Conversation search
+- Conversation history is capped before being sent to the LLM to control token usage.
+- FAQ knowledge is stored as prompt context rather than a dedicated vector database, keeping the architecture simple.
+- Authentication is intentionally omitted to keep the scope focused on core chat and persistence features.
 
 ---
 
-## Author
+## 🚀 Future Improvements
 
-Hemachandra
+- [ ] Streaming AI responses
+- [ ] Redis caching for conversation history
+- [ ] User authentication and accounts
+- [ ] Rate limiting
+- [ ] Markdown rendering for AI responses
+- [ ] Docker support
+- [ ] CI/CD pipeline
+- [ ] Conversation search
+
+---
+
+## 👤 Author
+
+**Hemachandra Kairuppala**  
+[GitHub](https://github.com/KAIRUPPALA-HEMACHANDRA)
